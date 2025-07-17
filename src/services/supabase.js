@@ -192,3 +192,121 @@ export const getTodaysPresentCount = async () => {
     throw err
   }
 }
+
+export const fetchAttendanceByDate = async (selectedDate) => {
+  try {
+    console.log('Fetching attendance records for date:', selectedDate)
+    
+    // First, get all active employees
+    const employees = await fetchEmployees()
+    console.log('Found', employees.length, 'active employees')
+    
+    // Then, get attendance records for the specific date
+    const { data: attendanceData, error } = await supabase
+      .from('attendance')
+      .select('*')
+      .eq('attendance_date', selectedDate)
+    
+    if (error) {
+      console.error('Error fetching attendance records by date:', error)
+      throw error
+    }
+    
+    console.log('Raw attendance data from database:', attendanceData)
+    console.log('Number of attendance records found:', attendanceData?.length || 0)
+    
+    // Combine employees with their attendance data
+    const processedAttendance = employees.map(employee => {
+      // Find attendance record for this employee on the selected date
+      const attendanceRecord = attendanceData?.find(record => record.employee_id === employee.id)
+      
+      let isPresent = false
+      let effectiveStatus = 'Absent'
+      
+      if (attendanceRecord) {
+        const hasStatus = attendanceRecord.status && attendanceRecord.status !== 'Absent'
+        const hasInTime = attendanceRecord.in_time !== null
+        isPresent = hasStatus || (!attendanceRecord.status && hasInTime)
+        
+        effectiveStatus = attendanceRecord.status || (hasInTime ? 'Present' : 'Absent')
+      }
+      
+      return {
+        employee_id: employee.id,
+        attendance_date: selectedDate,
+        in_time: attendanceRecord?.in_time || null,
+        out_time: attendanceRecord?.out_time || null,
+        status: attendanceRecord?.status || null,
+        total_minutes: attendanceRecord?.total_minutes || null,
+        isPresent,
+        effectiveStatus,
+        profile: employee
+      }
+    })
+    
+    console.log('Processed attendance records:', processedAttendance.length, 'records')
+    console.log('Sample processed record:', processedAttendance[0])
+    
+    return processedAttendance
+  } catch (err) {
+    console.error('fetchAttendanceByDate error:', err)
+    throw err
+  }
+}
+
+export const fetchAttendanceByDateRange = async (startDate, endDate) => {
+  try {
+    console.log('Fetching attendance records for date range:', startDate, 'to', endDate)
+    
+    const { data, error } = await supabase
+      .from('attendance')
+      .select(`
+        *,
+        profile:employee_id (
+          id,
+          first_name,
+          last_name,
+          emp_code,
+          role,
+          segment,
+          salary_current,
+          is_active
+        )
+      `)
+      .gte('attendance_date', startDate)
+      .lte('attendance_date', endDate)
+      .eq('profile.is_active', true)
+      .order('attendance_date', { ascending: false })
+      .order('profile.first_name', { ascending: true })
+    
+    if (error) {
+      console.error('Error fetching attendance records by date range:', error)
+      throw error
+    }
+    
+    // Process attendance records
+    const processedAttendance = data?.map(record => {
+      const hasStatus = record.status && record.status !== 'Absent'
+      const hasInTime = record.in_time !== null
+      const isPresent = hasStatus || (!record.status && hasInTime)
+      
+      let effectiveStatus = record.status
+      if (!record.status && hasInTime) {
+        effectiveStatus = 'Present'
+      }
+      
+      return {
+        ...record,
+        isPresent,
+        effectiveStatus,
+        profile: record.profile
+      }
+    }) || []
+    
+    console.log('Attendance records by date range processed:', processedAttendance.length, 'records')
+    return processedAttendance
+  } catch (err) {
+    console.error('fetchAttendanceByDateRange error:', err)
+    throw err
+  }
+}
