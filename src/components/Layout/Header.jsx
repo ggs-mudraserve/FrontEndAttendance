@@ -1,9 +1,22 @@
-import { Calendar, Clock, Users } from 'lucide-react'
+import { Calendar, Clock, Users, LogOut } from 'lucide-react'
 import { formatDate } from '../../utils/dateHelpers'
+import { useAuth } from '../../contexts/AuthContext'
+import { useAuthActions } from '../../hooks/useAuth'
+import Button from '../UI/Button'
 
 const Header = () => {
   const currentDate = new Date()
   const currentTime = new Date().toLocaleTimeString()
+  const { profile } = useAuth()
+  const { logout } = useAuthActions()
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -31,10 +44,19 @@ const Header = () => {
               </span>
             </div>
             
-            <div className="flex items-center">
+            <div className="flex items-center space-x-3">
               <div className="bg-primary text-white px-3 py-1 rounded-full text-sm font-medium">
-                Admin
+                {profile?.first_name} {profile?.last_name} - Admin
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center space-x-1"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Logout</span>
+              </Button>
             </div>
           </div>
         </div>

@@ -5,6 +5,8 @@ import AttendanceSummary from './components/Dashboard/AttendanceSummary'
 import AttendanceTable from './components/Dashboard/AttendanceTable'
 import AttendanceCharts from './components/Dashboard/AttendanceCharts'
 import EmployeeAttendanceDetail from './components/Dashboard/EmployeeAttendanceDetail'
+import { AuthProvider } from './contexts/AuthContext'
+import { ProtectedRoute } from './components/Auth/ProtectedRoute'
 import { useEmployees } from './hooks/useEmployees'
 import { useEmployeeAttendanceSummary, useTodaysPresentCount } from './hooks/useAttendance'
 import { useSalaryCalculation } from './hooks/useSalaryCalculation'
@@ -12,7 +14,7 @@ import { getCurrentMonth, getCurrentYear, getMonthName } from './utils/dateHelpe
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import Button from './components/UI/Button'
 
-function App() {
+const Dashboard = () => {
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth())
   const [currentYear, setCurrentYear] = useState(getCurrentYear())
   const [activeTab, setActiveTab] = useState('summary')
@@ -190,6 +192,16 @@ function App() {
 
       <Footer />
     </div>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    </AuthProvider>
   )
 }
 

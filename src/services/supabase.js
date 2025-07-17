@@ -8,6 +8,78 @@ console.log('Supabase Anon Key exists:', !!supabaseAnonKey)
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// Auth helpers
+export const signIn = async (email, password) => {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    
+    if (error) throw error
+    
+    // Check if user has admin role
+    if (data.user) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profile')
+        .select('role')
+        .eq('id', data.user.id)
+        .single()
+      
+      if (profileError) throw profileError
+      
+      if (profile.role !== 'admin') {
+        await supabase.auth.signOut()
+        throw new Error('Access denied. Admin role required.')
+      }
+    }
+    
+    return data
+  } catch (error) {
+    console.error('Sign in error:', error)
+    throw error
+  }
+}
+
+export const signOut = async () => {
+  try {
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+  } catch (error) {
+    console.error('Sign out error:', error)
+    throw error
+  }
+}
+
+export const getCurrentUser = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    return user
+  } catch (error) {
+    console.error('Get current user error:', error)
+    throw error
+  }
+}
+
+export const getCurrentUserProfile = async () => {
+  try {
+    const user = await getCurrentUser()
+    if (!user) return null
+    
+    const { data, error } = await supabase
+      .from('profile')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+    
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Get current user profile error:', error)
+    throw error
+  }
+}
+
 // Database helpers
 export const fetchEmployees = async () => {
   try {
