@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react'
-import { Search, Download, ChevronUp, ChevronDown, Calendar, Clock } from 'lucide-react'
+import React, { useState, useMemo } from 'react'
+import { Search, Download, ChevronUp, ChevronDown, Calendar, Clock, FileSpreadsheet } from 'lucide-react'
 import Card from '../UI/Card'
 import Badge from '../UI/Badge'
 import Button from '../UI/Button'
 import LoadingSpinner from '../UI/LoadingSpinner'
 import DatePicker from '../UI/DatePicker'
+import DateRangeExport from './DateRangeExport'
 import { useAttendanceByDate } from '../../hooks/useAttendance'
 
 const AttendanceTable = ({ employees, loading = false, onEmployeeClick }) => {
@@ -14,6 +15,7 @@ const AttendanceTable = ({ employees, loading = false, onEmployeeClick }) => {
   const [filterSegment, setFilterSegment] = useState('all')
   const [viewMode, setViewMode] = useState('today') // 'today' or 'date'
   const [selectedDate, setSelectedDate] = useState('')
+  const [showDateRangeExport, setShowDateRangeExport] = useState(false)
   
   // Set default date to yesterday when switching to date view
   const handleViewModeChange = (mode) => {
@@ -186,6 +188,7 @@ const AttendanceTable = ({ employees, loading = false, onEmployeeClick }) => {
   }
 
   return (
+    <>
     <Card>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4 sm:mb-0">
@@ -269,6 +272,11 @@ const AttendanceTable = ({ employees, loading = false, onEmployeeClick }) => {
           <Button variant="secondary" onClick={exportToCSV}>
             <Download className="h-4 w-4 mr-2" />
             Export
+          </Button>
+          
+          <Button variant="primary" onClick={() => setShowDateRangeExport(true)}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Date Range Export
           </Button>
         </div>
       </div>
@@ -421,6 +429,13 @@ const AttendanceTable = ({ employees, loading = false, onEmployeeClick }) => {
         </div>
       )}
     </Card>
+    
+    <DateRangeExport
+      isOpen={showDateRangeExport}
+      onClose={() => setShowDateRangeExport(false)}
+      employees={employees}
+    />
+    </>
   )
 }
 

@@ -349,7 +349,6 @@ export const fetchAttendanceByDateRange = async (startDate, endDate) => {
       .lte('attendance_date', endDate)
       .eq('profile.is_active', true)
       .order('attendance_date', { ascending: false })
-      .order('profile.first_name', { ascending: true })
     
     if (error) {
       console.error('Error fetching attendance records by date range:', error)
@@ -360,12 +359,19 @@ export const fetchAttendanceByDateRange = async (startDate, endDate) => {
     const processedAttendance = data?.map(record => {
       const hasStatus = record.status && record.status !== 'Absent'
       const hasInTime = record.in_time !== null
-      const isPresent = hasStatus || (!record.status && hasInTime)
       
+      // More accurate effectiveStatus determination
       let effectiveStatus = record.status
-      if (!record.status && hasInTime) {
-        effectiveStatus = 'Present'
+      if (!record.status) {
+        if (hasInTime) {
+          effectiveStatus = 'No Status' // Don't automatically assume Present
+        } else {
+          effectiveStatus = 'Absent'
+        }
       }
+      
+      // Only count as present if explicitly marked as Present or Late (working days)
+      const isPresent = effectiveStatus === 'Present' || effectiveStatus === 'Late' || effectiveStatus === 'Half Day'
       
       return {
         ...record,

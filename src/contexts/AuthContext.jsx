@@ -20,7 +20,14 @@ export const AuthProvider = ({ children }) => {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Auth timeout')), 5000)
+        )
+        
+        const authPromise = supabase.auth.getSession()
+        
+        const { data: { session } } = await Promise.race([authPromise, timeoutPromise])
         
         if (session?.user) {
           setUser(session.user)
@@ -38,6 +45,8 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (error) {
         console.error('Error getting initial session:', error)
+        // If authentication fails, skip for now to test the app
+        console.log('Skipping authentication for development')
       } finally {
         setLoading(false)
       }
